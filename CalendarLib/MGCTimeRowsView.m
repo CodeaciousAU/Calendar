@@ -213,7 +213,7 @@
 		if (self.showsHalfHourLines && i < NSMaxRange(self.hourRange)) {
 			y = MGCAlignedFloat(y + self.hourSlotHeight/2.) - lineWidth * .5;
 			CGContextSetLineDash(context, 0, dash, 2);
-			CGContextMoveToPoint(context, self.timeColumnWidth, y),
+			CGContextMoveToPoint(context, self.timeColumnWidth, y);
 			CGContextAddLineToPoint(context, self.timeColumnWidth + rect.size.width, y);
 			CGContextStrokePath(context);
 		}
