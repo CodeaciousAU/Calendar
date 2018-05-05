@@ -19,7 +19,6 @@ typedef NS_ENUM(NSInteger, HeaderSection){
 
 @property (nonatomic, strong) MGCDayPlannerView *dayPlannerView;
 @property (nonatomic, strong) UICollectionViewFlowLayout *flowLayout;
-@property (nonatomic, assign) NSInteger weekIndex; //keeps the count of scrolls left or right, where 0 is no scrolls -1 is one scroll left +1 is one scroll right
 @property (nonatomic, assign) CGPoint previousContentOffset;
 @property (nonatomic, strong) NSCalendar *calendar;
 
@@ -60,8 +59,6 @@ static CGFloat kItemHeight = 60;
         self.flowLayout.sectionInset = UIEdgeInsetsZero;
         self.flowLayout.minimumLineSpacing = 0;
         self.flowLayout.minimumInteritemSpacing = 0;
-        
-        self.weekIndex = 0; //0 represents the current week <1 past weeks one and >1 future weeks
         
         //setup a calendar to do the dates calculations
         self.calendar = [NSCalendar currentCalendar];
@@ -131,15 +128,26 @@ static CGFloat kItemHeight = 60;
 
 - (NSArray*)weekDaysFromDate:(NSDate*)date
 {
-    NSDateComponents* components = [self.calendar components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitWeekOfYear | NSCalendarUnitWeekday | NSCalendarUnitHour | NSCalendarUnitMinute) fromDate:date];
+    //find Sunday
+    NSInteger dayOfWeek = [self.calendar components:NSCalendarUnitWeekday fromDate:date].weekday;
+    NSDate *sunday;
+    if (dayOfWeek == 1) {
+        sunday = date;
+    } else {
+        NSDateComponents *subtraction = [[NSDateComponents alloc] init];
+        subtraction.day = -dayOfWeek+1;
+        sunday = [self.calendar dateByAddingComponents:subtraction toDate:date options:0];
+    }
     
     NSMutableArray* weekDaysDates = [NSMutableArray array];
+    [weekDaysDates addObject:sunday];
     
-    //iterate to fill the dates of the week days
-    for (int i = 1; i <= 7; i++) { //1 is the comopnent for the first day of week 7 the last
-        [components setWeekday:i];
-        NSDate* date = [self.calendar dateFromComponents:components];
-        [weekDaysDates addObject:date];
+    //iterate to get the remaining days of the week
+    NSDateComponents *components = [[NSDateComponents alloc] init];
+    for (int i = 1; i < 7; i++) {
+        components.day = i;
+        [weekDaysDates addObject:
+         [self.calendar dateByAddingComponents:components toDate:sunday options:0]];
     }
     
     return weekDaysDates;
@@ -149,15 +157,13 @@ static CGFloat kItemHeight = 60;
     
     NSDateComponents *components = [[NSDateComponents alloc] init];
     
-    components.weekOfYear = self.weekIndex;
-    NSDate *currentWeekDate = [self.calendar dateByAddingComponents:components toDate:self.selectedDate options:0];
-    self.currentWeekDates = [self weekDaysFromDate:currentWeekDate];
+    self.currentWeekDates = [self weekDaysFromDate:self.selectedDate];
     
-    components.weekOfYear = self.weekIndex + 1;
+    components.weekOfYear = 1;
     NSDate *nextWeekDate = [self.calendar dateByAddingComponents:components toDate:self.selectedDate options:0];
     self.nextWeekDates = [self weekDaysFromDate:nextWeekDate];
     
-    components.weekOfYear = self.weekIndex - 1;
+    components.weekOfYear = -1;
     NSDate *previousWeekDate = [self.calendar dateByAddingComponents:components toDate:self.selectedDate options:0];
     self.previousWeekDates = [self weekDaysFromDate:previousWeekDate];
 }
